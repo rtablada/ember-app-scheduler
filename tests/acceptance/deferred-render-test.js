@@ -13,14 +13,14 @@ test('visiting /demo', function(assert) {
   let done = assert.async();
 
   this.router.on('didTransition', () => {
-    this.scheduler.queues['afterFirstRoutePaint'].afterPaintPromise.then(() => {
+    this.scheduler.afterFirstRoutePaint.afterPaintPromise.then(() => {
       const deferredElement = find('.deferred-container ul');
       assert.ok(deferredElement.is(':visible'), 'Deferred content should be visible.');
       const adElement = find('.ad-container h3');
       assert.notOk(adElement.is(':visible'), 'Ad should not be visible.');
     });
 
-    this.scheduler.queues['afterContentPaint'].afterPaintPromise.then(() => {
+    this.scheduler.afterContentPaint.afterPaintPromise.then(() => {
       const adElement = find('.ad-container h3');
       assert.ok(adElement.is(':visible'), 'Ad should be visible.');
       done();
@@ -36,14 +36,14 @@ test('visiting /demo when requestAnimationFrame is not present', function(assert
   let done = assert.async();
 
   this.router.on('didTransition', () => {
-    this.scheduler.queues['afterFirstRoutePaint'].afterPaintPromise.then(() => {
+    this.scheduler.afterFirstRoutePaint.afterPaintPromise.then(() => {
       const deferredElement = find('.deferred-container ul');
       assert.ok(deferredElement.is(':visible'), 'Deferred content should be visible.');
       const adElement = find('.ad-container h3');
       assert.notOk(adElement.is(':visible'), 'Ad should not be visible.');
     });
 
-    this.scheduler.queues['afterContentPaint'].afterPaintPromise.then(() => {
+    this.scheduler.afterContentPaint.afterPaintPromise.then(() => {
       const adElement = find('.ad-container h3');
       assert.ok(adElement.is(':visible'), 'Ad should be visible.');
       this.scheduler._useRAF = true;

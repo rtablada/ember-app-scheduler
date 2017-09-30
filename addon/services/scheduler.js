@@ -1,5 +1,7 @@
 import Ember from 'ember';
 import { DEBUG } from '@glimmer/env';
+import Queue from '../queue';
+import Token from '../token';
 
 const {
   run,
@@ -7,50 +9,22 @@ const {
   Service,
 } = Ember;
 
-class Token {
-  constructor() {
-    this._cancelled = false;
-  }
-
-  get cancelled() {
-    return this._cancelled;
-  }
-
-  cancel() {
-    this._cancelled = true;
-  }
-}
-
-class Queue {
-  constructor() {
-    this.reset();
-  }
-
-  reset() {
-    this.tasks = [];
-    this.isActive = true;
-    this.afterPaintDeferred = RSVP.defer();
-    this.afterPaintPromise = this.afterPaintDeferred.promise;
-  }
-}
-
 const Scheduler = Service.extend({
-  queueNames: ['afterFirstRoutePaint', 'afterContentPaint'],
-
   init() {
     this._super();
+    this.afterFirstRoutePaint = new Queue();
+    this.afterContentPaint = new Queue();
     this._nextPaintFrame = null;
     this._nextPaintTimeout = null;
     this._nextAfterPaintPromise = null;
     this._routerWillTransitionHandler = null;
     this._routerDidTransitionHandler = null;
-    this._initQueues();
     this._connectToRouter();
     this._useRAF = typeof requestAnimationFrame === "function";
   },
 
   scheduleWork(queueName, callback) {
-    const queue = this.queues[queueName];
+    const queue = this[queueName];
     const token = new Token();
 
     if (queue.isActive) {
@@ -68,7 +42,7 @@ const Scheduler = Service.extend({
   },
 
   flushQueue(queueName) {
-    const queue = this.queues[queueName];
+    const queue = this[queueName];
     queue.isActive = false;
 
     for (let i = 0; i < queue.tasks.length; i += 2) {
@@ -86,22 +60,9 @@ const Scheduler = Service.extend({
       });
   },
 
-  _initQueues() {
-    const queues = this.queues = Object.create(null);
-    const queueNames = this.queueNames;
-
-    for (let i = 0; i < queueNames.length; i++) {
-      queues[queueNames[i]] = new Queue();
-    }
-  },
-
   _resetQueues() {
-    const queues = this.queues;
-    const queueNames = this.queueNames;
-
-    for (let i = 0; i < queueNames.length; i++) {
-      queues[queueNames[i]].reset();
-    }
+    this.afterFirstRoutePaint.reset();
+    this.afterContentPaint.reset();
   },
 
   _afterNextPaint() {
@@ -154,7 +115,8 @@ const Scheduler = Service.extend({
   willDestroy() {
     this._super();
     const router = this.get('router');
-    this.queues = null; // don't hold any references to uncompleted items
+    this.afterFirstRoutePaint = null; // don't hold any references to uncompleted items
+    this.afterContentPaint = null;
 
     router.off('willTransition', this._routerWillTransitionHandler);
     router.off('didTransition', this._routerDidTransitionHandler);
@@ -173,12 +135,11 @@ if (DEBUG) {
 
       if (Ember.testing) {
         this._waiter = () => {
-          if (!this.queues) {
+          if (!this.afterFirstRoutePaint && !this.afterContentPaint) {
             return;
           }
-          const lastQueueName = this.queueNames[this.queueNames.length - 1];
-          const lastQueue = this.queues[lastQueueName];
-          return !lastQueue.isActive;
+
+          return !this.afterContentPaint.isActive;
         };
         Ember.Test.registerWaiter(this._waiter);
       }
