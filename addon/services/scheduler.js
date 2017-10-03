@@ -12,6 +12,7 @@ const {
 const Scheduler = Service.extend({
   init() {
     this._super();
+
     this.afterFirstRoutePaint = new Queue();
     this.afterContentPaint = new Queue();
     this._nextPaintFrame = null;
@@ -19,8 +20,9 @@ const Scheduler = Service.extend({
     this._nextAfterPaintPromise = null;
     this._routerWillTransitionHandler = null;
     this._routerDidTransitionHandler = null;
-    this._connectToRouter();
     this._useRAF = typeof requestAnimationFrame === "function";
+
+    this._connectToRouter();
   },
 
   scheduleWork(queueName, callback) {
