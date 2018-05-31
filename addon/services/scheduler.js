@@ -49,6 +49,15 @@ const Scheduler = Service.extend({
     this._initQueues();
     this._connectToRouter();
     this._useRAF = typeof requestAnimationFrame === 'function';
+
+    deprecate(
+      `The 'scheduler' service will be deprecated in favor of using the functional API for ember-app-scheduler.`,
+      false,
+      {
+        id: 'ember-app-scheduler-service',
+        until: '2.0.0',
+      }
+    );
   },
 
   scheduleWork(queueName, callback) {
